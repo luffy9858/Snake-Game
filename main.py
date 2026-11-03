@@ -4,12 +4,14 @@ import random
 import time #using for some sleep functions
 
 #organised the sizes so we can change it in one go
+display_size_1 = 1000
+display_size_2 = 800
 
+#don't change these values
 apple_size = 20
 snake_size = 20
-display_size_1 = 500
-display_size_2 = 500
-
+current_size_x = 500
+current_size_y = 500
 # started classes here
 
 class Food:
@@ -52,7 +54,7 @@ class Snake:
 
     def collision_own(self):
         self.game_over = False
-        for position in self.positions[1:]:
+        for position in self.positions[3:]:
             head_x, head_y = position
             self.tail_rect = pygame.Rect(head_x, head_y, snake_size, snake_size)
             if self.head_rect.colliderect(self.tail_rect):
@@ -169,7 +171,8 @@ class Game:
         self.collision_sound = pygame.mixer.Sound("assets/sfx/collision.wav")
         self.game_enter_sound.set_volume(0.5)
         self.screen = pygame.display.set_mode((display_size_1, display_size_2))
-        self.screen.fill((163, 37, 247))
+        # self.screen.fill((163, 37, 247))
+        # self.render_bg()
         self.snake = Snake(self.screen, self)
         self.food = Food(self.screen)
         self.clock = pygame.time.Clock()
@@ -181,6 +184,11 @@ class Game:
         self.base_difficulty = 5
         self.start = True
 
+    def render_bg(self):
+        self.grid = pygame.image.load("assets/grid.png")
+        self.grid = pygame.transform.scale(self.grid, (display_size_1, display_size_2))
+        self.screen.blit(self.grid,(0,0))
+
     def reset_game(self):
         self.snake = Snake(self.screen, self)
         self.food = Food(self.screen)
@@ -188,47 +196,57 @@ class Game:
         self.game_state = "playing"
         self.game_confirm = False
         self.base_difficulty = 5
+        self.game_over_time = 0
+
+    def dynamic_scaling(self, x, y):
+        self.x = x / current_size_x
+        self.y = y / current_size_y
+        true_x = self.x * display_size_1
+        true_y = self.y * display_size_2
+        main_tuple = (true_x, true_y)
+        # print(f"This is the scoring coordinates: {main_tuple}") #debug
+        return main_tuple
 
     def display_score(self):
         font = pygame.font.Font(self.font, 20)
         self.score = font.render(f"Score: {self.score_int}", False, (255,255,255))
-        self.screen.blit(self.score, (380, 20))
+        self.screen.blit(self.score, self.dynamic_scaling(380,20))
 
     def draw_screen(self):
-        self.screen.fill((163, 37, 247))
+        self.render_bg()
         self.food.food_draw()
         self.snake.draw()
         self.display_score()
         pygame.display.flip()
 
     def game_over_screen(self):
-            self.screen.fill((163, 37, 247))
+            self.render_bg()
             font = pygame.font.Font(self.font, 30)
             self.over = font.render(f"Game over!", False, (255,255,255))
-            game_over = self.over.get_rect(center=(250,200))
+            game_over = self.over.get_rect(center= self.dynamic_scaling(250,200))
             self.screen.blit(self.over, game_over)
             
             self.score = font.render(f"Score: {self.score_int}", False, (255,255,255))
-            score_more = self.score.get_rect(center=(250,250))
+            score_more = self.score.get_rect(center=self.dynamic_scaling(250,250))
             self.screen.blit(self.score, score_more)
             
             font_2 = pygame.font.Font(self.font, 20)
             self.restart = font_2.render(f"Press R to restart", False, (255,255,255))
-            restart = self.restart.get_rect(center=(250,300))
+            restart = self.restart.get_rect(center=self.dynamic_scaling(250,300))
             self.screen.blit(self.restart, restart)
 
             pygame.display.flip()
 
     def quit_confirmation(self):
-            self.screen.fill((163, 37, 247))
+            self.render_bg()
             font = pygame.font.Font(self.font, 15)
             self.quit = font.render(f"Do you want to quit the game?", True, (255,255,255))
-            quit = self.quit.get_rect(center=(250,200))
+            quit = self.quit.get_rect(center=self.dynamic_scaling(250,200))
             self.screen.blit(self.quit, quit)
             
             font_2 = pygame.font.Font(self.font, 15)
             self.confirm = font_2.render(f"Press Y to confirm or any other key to Cancel!", True, (255,255,255))
-            confirm = self.confirm.get_rect(center=(250,240))
+            confirm = self.confirm.get_rect(center=self.dynamic_scaling(250,240))
             self.screen.blit(self.confirm, confirm)
 
             pygame.display.flip()
@@ -255,10 +273,10 @@ class Game:
             self.lvl_up_sound.play()
 
     def start_screen(self):
-        self.screen.fill((163, 37, 247))
+        self.render_bg()
         font = pygame.font.Font(self.font, 20)
         font_render = font.render(f"Press 'Enter' to start the Game!", False, (255,255,255))
-        font_render_adjusted = font_render.get_rect(center=(250, 250))
+        font_render_adjusted = font_render.get_rect(center=self.dynamic_scaling(250, 250))
         self.screen.blit(font_render, font_render_adjusted)
         pygame.display.flip()
 
@@ -289,6 +307,7 @@ class Game:
                         if pygame.time.get_ticks() - self.game_over_time >= 500:
                             if event.key == pygame.K_r:
                                 self.reset_game()
+                                self.g_over_sound.stop()
                                 self.game_enter_sound.play()
                             else:
                                 self.game_confirm = True
