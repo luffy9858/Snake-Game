@@ -1,23 +1,33 @@
 import pygame
 import random
+import os
+import sys
 # from pygame import *
-import time #using for some sleep functions
+# import time #using for some sleep functions
 
 #organised the sizes so we can change it in one go
-display_size_1 = 1000
-display_size_2 = 800
+display_size_1 = 600
+display_size_2 = 600
 
 #don't change these values
 apple_size = 20
 snake_size = 20
 current_size_x = 500
 current_size_y = 500
-# started classes here
 
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = os.path.abspath(".")
+
+    return os.path.join(base_path, relative_path)
+
+# started classes here
 class Food:
     def __init__(self, parent_food_null):
         self.parent_food_null = parent_food_null
-        self.food_image = pygame.image.load("assets/apple.png")
+        self.food_image = pygame.image.load(resource_path("assets/apple.png"))
         self.food_image = pygame.transform.scale(self.food_image, (apple_size,apple_size))
         self.x = 300
         self.y = 200
@@ -29,18 +39,18 @@ class Food:
         self.rect.topleft = (self.x, self.y)
 
     def spawn_apple(self):
-        self.x = random.randint(0, 24) * apple_size
-        self.y = random.randint(0, 24) * apple_size
+        self.x = random.randint(0, (display_size_1 // apple_size) - 1) * apple_size
+        self.y = random.randint(0, (display_size_2 // apple_size) - 1) * apple_size
 
 class Snake:
     def __init__(self, parent_null, game):
         self.game = game
         self.parent_null = parent_null #not used here, it is just so we don't get error for the draw fun
 
-        self.snake_image = pygame.image.load("assets/white eye circle.png")
+        self.snake_image = pygame.image.load(resource_path("assets/white eye circle.png"))
         self.snake_image = pygame.transform.scale(self.snake_image, (snake_size,snake_size))
 
-        self.snake_body = pygame.image.load("assets/snake_back.png")
+        self.snake_body = pygame.image.load(resource_path("assets/snake_back.png"))
         self.snake_body = pygame.transform.scale(self.snake_body, (snake_size,snake_size))
 
         self.positions = [(100,100), (80,100), (60,100)]
@@ -51,10 +61,9 @@ class Snake:
         self.should_grow = False
         self.game_over = False
 
-
     def collision_own(self):
         self.game_over = False
-        for position in self.positions[3:]:
+        for position in self.positions[1:]:
             head_x, head_y = position
             self.tail_rect = pygame.Rect(head_x, head_y, snake_size, snake_size)
             if self.head_rect.colliderect(self.tail_rect):
@@ -63,13 +72,6 @@ class Snake:
                 self.sound_channel.play(self.game.collision_sound)
                 self.sound_channel.queue(self.game.g_over_sound)
                 break
-
-
-    # def grow(self):
-    #     head_x, head_y = self.positions[0]
-    #     new_head = (head_x, head_y)
-    #     self.positions.insert(-1, new_head)
-    #no need for this, the grow variable takes care of it
 
     def draw(self):
         for i, position in enumerate(self.positions):
@@ -94,16 +96,16 @@ class Snake:
     def movement(self):
 
         if self.direction == "up":
-            self.logic_sub_y(20)
+            self.logic_sub_y(snake_size)
 
         if self.direction == "down":
-            self.logic_add_y(20)
+            self.logic_add_y(snake_size)
 
         if self.direction == "left":
-            self.logic_sub_x(20)
+            self.logic_sub_x(snake_size)
 
         if self.direction == "right":
-            self.logic_add_x(20)
+            self.logic_add_x(snake_size)
 
 
         head_x, head_y = self.positions[0]
@@ -122,7 +124,6 @@ class Snake:
         self.head_rect.topleft = (head_x_main, head_y_main)
         self.collision_own()
 
-    
     def logic_add_x(self,n):
         head_x, head_y = self.positions[0]
         new_head = (head_x + n, head_y)
@@ -163,12 +164,12 @@ class Game:
     def __init__(self):
         pygame.init()
         pygame.mixer.init()
-        self.eat_sound = pygame.mixer.Sound("assets/sfx/apple_bite.wav")
-        self.g_over_sound = pygame.mixer.Sound("assets/sfx/game_over.wav")
-        self.lvl_up_sound = pygame.mixer.Sound("assets/sfx/level_up.wav")
-        self.start_s_sound = pygame.mixer.Sound("assets/sfx/start_screen.wav")
-        self.game_enter_sound = pygame.mixer.Sound("assets/sfx/game_enter.wav")
-        self.collision_sound = pygame.mixer.Sound("assets/sfx/collision.wav")
+        self.eat_sound = pygame.mixer.Sound(resource_path("assets/sfx/apple_bite.wav"))
+        self.g_over_sound = pygame.mixer.Sound(resource_path("assets/sfx/game_over.wav"))
+        self.lvl_up_sound = pygame.mixer.Sound(resource_path("assets/sfx/level_up.wav"))
+        self.start_s_sound = pygame.mixer.Sound(resource_path("assets/sfx/start_screen.wav"))
+        self.game_enter_sound = pygame.mixer.Sound(resource_path("assets/sfx/game_enter.wav"))
+        self.collision_sound = pygame.mixer.Sound(resource_path("assets/sfx/collision.wav"))
         self.game_enter_sound.set_volume(0.5)
         self.screen = pygame.display.set_mode((display_size_1, display_size_2))
         # self.screen.fill((163, 37, 247))
@@ -177,7 +178,7 @@ class Game:
         self.food = Food(self.screen)
         self.clock = pygame.time.Clock()
         self.score_int = 0
-        self.font = 'assets/fonts/MinecraftRegular-Bmg3.otf'
+        self.font = resource_path('assets/fonts/MinecraftRegular-Bmg3.otf')
         self.game_state = "playing"
         self.game_confirm = False
         self.game_over_time = 0
@@ -185,7 +186,7 @@ class Game:
         self.start = True
 
     def render_bg(self):
-        self.grid = pygame.image.load("assets/grid.png")
+        self.grid = pygame.image.load(resource_path("assets/grid.png"))
         self.grid = pygame.transform.scale(self.grid, (display_size_1, display_size_2))
         self.screen.blit(self.grid,(0,0))
 
