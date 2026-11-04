@@ -354,16 +354,6 @@ class Game:
             
             self.clock.tick(self.base_difficulty)
             
-
-                    # if event.type == pygame.KEYDOWN:
-                    #     self.quit_confirmation()
-
-                    # if event.type == pygame.KEYDOWN:
-                    #     if event.key == pygame.K_y:
-                    #         confirming = False
-                    #         break
-                    #     else:
-                    #         self.game_over_screen()
         pygame.quit()
 
 if __name__ == "__main__":
