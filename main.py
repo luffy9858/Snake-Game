@@ -3,7 +3,6 @@ import random
 import os
 import sys
 # from pygame import *
-# import time #using for some sleep functions
 
 #organised the sizes so we can change it in one go
 display_size_1 = 600
