@@ -8,6 +8,7 @@ Features so far:
 4. Score tracking.
 5. Increasing difficulty as your score increases.
 6. Game over screen with restart functionality.
+7. Added Obstacles (New - 5th Nov)
 
 Controls:
 1. WSAD - For movements
@@ -16,3 +17,6 @@ Controls:
 Requirements:
 1. Python 3.14+ (Don't know if it will work on previous one or not, but I made it on this version tho)
 2. Pygame-CE (use "pip install Pygame-CE")
+
+Started on: 30 Nov 2026
+Last Updated: 5 Nov 2026

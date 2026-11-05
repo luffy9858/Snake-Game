@@ -10,6 +10,7 @@ display_size_2 = 600
 
 #don't change these values
 apple_size = 20
+bomb_size = 20
 snake_size = 20
 current_size_x = 500
 current_size_y = 500
@@ -23,6 +24,25 @@ def resource_path(relative_path):
     return os.path.join(base_path, relative_path)
 
 # started classes here
+class Obstacles:
+    def __init__(self, parent_screen, game):
+        self.parent = parent_screen
+        self.game = game
+        self.bomb_image = pygame.image.load(resource_path("assets/bomb.png"))
+        self.bomb_image = pygame.transform.scale(self.bomb_image, (bomb_size, bomb_size))
+        self.x = 500
+        self.y = 600
+        self.bomb_rect = pygame.Rect(self.x, self.y, bomb_size, bomb_size)
+
+    def bomb_draw(self):
+        if self.game.score_int >= 3 and self.game.score_int%3 == 0 and self.game.game_state == "playing":
+            self.parent.blit(self.bomb_image, (self.x, self.y))
+            self.bomb_rect.topleft = (self.x, self.y)
+
+    def spawn_bomb(self):
+        self.x = random.randint(0, (display_size_1 // bomb_size) - 1) * bomb_size
+        self.y = random.randint(0, (display_size_2 // bomb_size) - 1) * bomb_size
+
 class Food:
     def __init__(self, parent_food_null):
         self.parent_food_null = parent_food_null
@@ -82,15 +102,19 @@ class Snake:
     def move_down(self):
         if self.direction != "up":
             self.direction = "down"
+            self.game.user_pattern.append("down")
     def move_up(self):
         if self.direction != "down":
             self.direction = "up"
+            self.game.user_pattern.append("up")
     def move_right(self):
         if self.direction != "left":
             self.direction = "right"
+            self.game.user_pattern.append("right")
     def move_left(self):
         if self.direction != "right":
             self.direction = "left"
+            self.game.user_pattern.append("left")
     
     def movement(self):
 
@@ -175,6 +199,7 @@ class Game:
         # self.render_bg()
         self.snake = Snake(self.screen, self)
         self.food = Food(self.screen)
+        self.obstacle = Obstacles(self.screen, self)
         self.clock = pygame.time.Clock()
         self.score_int = 0
         self.font = resource_path('assets/fonts/MinecraftRegular-Bmg3.otf')
@@ -183,6 +208,7 @@ class Game:
         self.game_over_time = 0
         self.base_difficulty = 5
         self.start = True
+        self.user_pattern = []
 
     def render_bg(self):
         self.grid = pygame.image.load(resource_path("assets/grid.png"))
@@ -192,11 +218,13 @@ class Game:
     def reset_game(self):
         self.snake = Snake(self.screen, self)
         self.food = Food(self.screen)
+        self.obstacle = Obstacles(self.screen, self)
         self.score_int = 0
         self.game_state = "playing"
         self.game_confirm = False
         self.base_difficulty = 5
         self.game_over_time = 0
+        self.user_pattern = []
 
     def dynamic_scaling(self, x, y):
         self.x = x / current_size_x
@@ -216,6 +244,7 @@ class Game:
         self.render_bg()
         self.food.food_draw()
         self.snake.draw()
+        self.obstacle.bomb_draw()
         self.display_score()
         pygame.display.flip()
 
@@ -266,6 +295,10 @@ class Game:
 
         while (self.food.x, self.food.y) in self.snake.positions:
             self.food.spawn_apple()
+
+    def spawn_check_obstacles(self):
+        while (self.obstacle.x, self.obstacle.y) in self.snake.positions:
+            self.obstacle.spawn_bomb()
 
     def set_game_difficulty(self):
         if self.score_int % 3 == 0:
@@ -331,6 +364,15 @@ class Game:
                     self.game_state = "game over"
                     self.game_over_time = pygame.time.get_ticks()
                 #this is for game over
+
+                elif self.snake.head_rect.colliderect(self.obstacle.bomb_rect) and self.game_state == "playing":
+                    self.game_state = "game over"
+                    self.game_over_time = pygame.time.get_ticks()
+                    self.game_over = True
+                    self.sound_channel = pygame.mixer.Channel(0)
+                    self.sound_channel.play(self.collision_sound)
+                    self.sound_channel.queue(self.g_over_sound)
+
                 else:
                     if self.snake.head_rect.colliderect(self.food.rect):
                         self.eat_sound.play()
@@ -351,8 +393,13 @@ class Game:
 
             elif self.start:
                 self.start_screen()
-            
+
+            if self.score_int > 2 and self.game_state == "playing":
+                self.obstacle.spawn_bomb()
+                self.spawn_check_obstacles()
+
             self.clock.tick(self.base_difficulty)
+            # print(self.user_pattern) #debug for user pattern
             
         pygame.quit()
 
