@@ -100,21 +100,25 @@ class Snake:
                 self.parent_null.blit(self.snake_body, (position))
         
     def move_down(self):
-        if self.direction != "up":
+        if self.direction != "up" and self.direction != "down":
             self.direction = "down"
             self.game.user_pattern.append("down")
+            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
     def move_up(self):
-        if self.direction != "down":
+        if self.direction != "down" and self.direction != "up":
             self.direction = "up"
             self.game.user_pattern.append("up")
+            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
     def move_right(self):
-        if self.direction != "left":
+        if self.direction != "left" and self.direction != "right":
             self.direction = "right"
             self.game.user_pattern.append("right")
+            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
     def move_left(self):
-        if self.direction != "right":
+        if self.direction != "right" and self.direction != "left":
             self.direction = "left"
             self.game.user_pattern.append("left")
+            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
     
     def movement(self):
 
@@ -315,6 +319,28 @@ class Game:
         self.screen.blit(font_render, font_render_adjusted)
         pygame.display.flip()
 
+    def debug_lines(self,cl,line,n):
+        debug_from = cl
+        master_control = False
+        if master_control:
+            stop_snake = True
+            while stop_snake and debug_from == "snake":
+                print(line, n)
+                break
+            stop_food = True
+            while stop_food and debug_from == "food":
+                print(line, n)
+                break
+            stop_obstacle = True
+            while stop_obstacle and debug_from == "obstacle":
+                print(line, n)
+                break
+            stop_game = True
+            while stop_game and debug_from == "game":
+                print(line, n)
+                break
+
+
     def run(self):
         running = True
         self.start_s_sound.play()
@@ -402,7 +428,6 @@ class Game:
                 self.start_screen()
 
             self.clock.tick(self.base_difficulty)
-            # print(self.user_pattern) #debug for user pattern
             
         pygame.quit()
 
