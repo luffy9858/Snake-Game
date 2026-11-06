@@ -161,7 +161,7 @@ class Snake:
         head_x_main, head_y_main = self.positions[0]
         # self.head_rect = pygame.Rect(head_x_main, head_y_main, snake_size, snake_size) #we can use this but we will use another one here
         self.head_rect.topleft = (head_x_main, head_y_main)
-        self.game.tracking.record_position(self.positions[0])
+        self.game.tracking.record_position(self.positions[0]) #used for tracking positions
         self.collision_own()
 
     def logic_add_x(self,n):
@@ -200,6 +200,7 @@ class Snake:
         else:
             self.should_grow = False
 
+''' record time
     # def record_time(self):
         # current_time = pygame.time.get_ticks()
         # elapsed_time = current_time - self.direction_start_time
@@ -208,7 +209,9 @@ class Snake:
         #     self.game.direction_time[self.direction] = 0
 
         # self.game.direction_time[self.direction] += elapsed_time
-        # self.direction_start_time = current_time
+        # self.direction_start_time = current_time 
+
+'''
 
 class Tracking:
     def __init__(self, game):
@@ -219,7 +222,7 @@ class Tracking:
             for x in range(display_size_1//snake_size)
             for y in range(display_size_2//snake_size)
         }
-        print(self.snake_area_visited) #debug line
+        # print(self.snake_area_visited) #debug line
 
     def record_position(self, position):
         x,y = position
@@ -227,7 +230,14 @@ class Tracking:
         
         self.snake_positions.append(grid_position)
         self.snake_area_visited[grid_position] += 1
+        self.most_visited()
         # print(self.snake_area_visited) #debug line
+
+    def most_visited(self):
+        self.most_visited_cell = max(
+                self.snake_area_visited, key=self.snake_area_visited.get
+            )
+        return self.most_visited_cell
 
 class Game:
     def __init__(self):
