@@ -79,7 +79,10 @@ class Snake:
         self.head_rect = pygame.Rect(head_x_main, head_y_main, snake_size, snake_size)
         self.should_grow = False
         self.game_over = False
-        self.direction_start_time = pygame.time.get_ticks()
+        # self.direction_start_time = pygame.time.get_ticks()
+        # self.dominant_direction = max(
+        #     self.game.direction_time, key=self.game.direction_time.get
+        #     )
 
     def collision_own(self):
         self.game_over = False
@@ -102,32 +105,32 @@ class Snake:
         
     def move_down(self):
         if self.direction != "up" and self.direction != "down":
-            self.record_time()
+            # self.record_time()
             self.direction = "down"
             self.game.user_pattern.append("down")
             self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
     def move_up(self):
         if self.direction != "down" and self.direction != "up":
-            self.record_time()
+            # self.record_time()
             self.direction = "up"
             self.game.user_pattern.append("up")
             self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
     def move_right(self):
         if self.direction != "left" and self.direction != "right":
-            self.record_time()
+            # self.record_time()
             self.direction = "right"
             self.game.user_pattern.append("right")
             self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
     def move_left(self):
         if self.direction != "right" and self.direction != "left":
-            self.record_time()
+            # self.record_time()
             self.direction = "left"
             self.game.user_pattern.append("left")
             self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
     
     def movement(self):
 
@@ -158,6 +161,7 @@ class Snake:
         head_x_main, head_y_main = self.positions[0]
         # self.head_rect = pygame.Rect(head_x_main, head_y_main, snake_size, snake_size) #we can use this but we will use another one here
         self.head_rect.topleft = (head_x_main, head_y_main)
+        self.game.tracking.record_position(self.positions[0])
         self.collision_own()
 
     def logic_add_x(self,n):
@@ -196,15 +200,34 @@ class Snake:
         else:
             self.should_grow = False
 
-    def record_time(self):
-        current_time = pygame.time.get_ticks()
-        elapsed_time = current_time - self.direction_start_time
+    # def record_time(self):
+        # current_time = pygame.time.get_ticks()
+        # elapsed_time = current_time - self.direction_start_time
 
-        if self.direction not in self.game.direction_time:
-            self.game.direction_time[self.direction] = 0
+        # if self.direction not in self.game.direction_time:
+        #     self.game.direction_time[self.direction] = 0
 
-        self.game.direction_time[self.direction] += elapsed_time
-        self.direction_start_time = current_time
+        # self.game.direction_time[self.direction] += elapsed_time
+        # self.direction_start_time = current_time
+
+class Tracking:
+    def __init__(self, game):
+        self.game = game
+        self.snake_positions = []
+        self.snake_area_visited = {
+            (x,y): 0
+            for x in range(display_size_1//snake_size)
+            for y in range(display_size_2//snake_size)
+        }
+        print(self.snake_area_visited) #debug line
+
+    def record_position(self, position):
+        x,y = position
+        grid_position = (x// snake_size, y//snake_size)
+        
+        self.snake_positions.append(grid_position)
+        self.snake_area_visited[grid_position] += 1
+        # print(self.snake_area_visited) #debug line
 
 class Game:
     def __init__(self):
@@ -220,6 +243,7 @@ class Game:
         self.screen = pygame.display.set_mode((display_size_1, display_size_2))
         # self.screen.fill((163, 37, 247))
         # self.render_bg()
+        self.tracking = Tracking(self)
         self.snake = Snake(self.screen, self)
         self.food = Food(self.screen)
         self.obstacle = Obstacles(self.screen, self)
@@ -233,7 +257,7 @@ class Game:
         self.start = True
         self.user_pattern = []
         self.last_obstacle_score = 0
-        self.direction_time = {"up": 0, "down": 0, "left": 0, "right": 0}
+        # self.direction_time = {"up": 0, "down": 0, "left": 0, "right": 0}
 
     def render_bg(self):
         self.grid = pygame.image.load(resource_path("assets/grid.png"))
@@ -241,6 +265,7 @@ class Game:
         self.screen.blit(self.grid,(0,0))
 
     def reset_game(self):
+        self.tracking = Tracking(self)
         self.snake = Snake(self.screen, self)
         self.food = Food(self.screen)
         self.obstacle = Obstacles(self.screen, self)
@@ -251,8 +276,9 @@ class Game:
         self.game_over_time = 0
         self.user_pattern = []
         self.last_obstacle_score = 0
-        self.direction_time = {"up": 0, "down": 0, "left": 0, "right": 0}
-        self.snake.direction_start_time = pygame.time.get_ticks()
+        self.tracking.record_position(self.snake.positions[0])
+        # self.direction_time = {"up": 0, "down": 0, "left": 0, "right": 0}
+        # self.snake.direction_start_time = pygame.time.get_ticks()
 
     def dynamic_scaling(self, x, y):
         self.x = x / current_size_x
@@ -405,7 +431,8 @@ class Game:
                         if event.key == pygame.K_KP_ENTER or event.key == pygame.K_RETURN:
                             self.game_enter_sound.play()
                             self.start = False
-                            self.snake.direction_start_time = pygame.time.get_ticks()
+                            # self.snake.direction_start_time = pygame.time.get_ticks()
+                            self.tracking.record_position(self.snake.positions[0])
                             continue
 
             if self.game_state == "playing" and self.start == False:
@@ -456,3 +483,4 @@ class Game:
 if __name__ == "__main__":
     game = Game()
     game.run()
+
