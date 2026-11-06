@@ -209,6 +209,7 @@ class Game:
         self.base_difficulty = 5
         self.start = True
         self.user_pattern = []
+        self.last_obstacle_score = 0
 
     def render_bg(self):
         self.grid = pygame.image.load(resource_path("assets/grid.png"))
@@ -225,6 +226,7 @@ class Game:
         self.base_difficulty = 5
         self.game_over_time = 0
         self.user_pattern = []
+        self.last_obstacle_score = 0
 
     def dynamic_scaling(self, x, y):
         self.x = x / current_size_x
@@ -365,7 +367,7 @@ class Game:
                     self.game_over_time = pygame.time.get_ticks()
                 #this is for game over
 
-                elif self.snake.head_rect.colliderect(self.obstacle.bomb_rect) and self.game_state == "playing":
+                elif self.score_int >= 3 and self.score_int % 3 == 0 and self.snake.head_rect.colliderect(self.obstacle.bomb_rect) and self.game_state == "playing":
                     self.game_state = "game over"
                     self.game_over_time = pygame.time.get_ticks()
                     self.game_over = True
@@ -382,6 +384,11 @@ class Game:
                         # self.snake.grow()
                         self.snake.should_grow = True
                         self.set_game_difficulty()
+
+                    if (self.score_int >= 3 and self.score_int % 3 == 0 and self.score_int != self.last_obstacle_score and self.game_state == "playing"):
+                        self.obstacle.spawn_bomb()
+                        self.spawn_check_obstacles()
+                        self.last_obstacle_score = self.score_int
                     self.draw_screen()
 
             elif self.game_state == "game over" and self.game_confirm == False:
@@ -393,10 +400,6 @@ class Game:
 
             elif self.start:
                 self.start_screen()
-
-            if self.score_int > 2 and self.game_state == "playing":
-                self.obstacle.spawn_bomb()
-                self.spawn_check_obstacles()
 
             self.clock.tick(self.base_difficulty)
             # print(self.user_pattern) #debug for user pattern
