@@ -418,8 +418,9 @@ class Game:
             self.food.spawn_apple()
 
     def spawn_check_obstacles(self):
-        while (self.obstacle.x, self.obstacle.y) in self.snake.positions:
+        while (self.obstacle.x, self.obstacle.y) in self.snake.positions or (self.obstacle.x, self.obstacle.y) == (self.food.x, self.food.y):
             self.obstacle.spawn_bomb()
+            
 
     def set_game_difficulty(self):
         if self.score_int % 3 == 0:
