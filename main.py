@@ -40,9 +40,17 @@ class Obstacles:
             self.bomb_rect.topleft = (self.x, self.y)
 
     def spawn_bomb(self):
-        self.x = random.randint(0, (display_size_1 // bomb_size) - 1) * bomb_size
-        self.y = random.randint(0, (display_size_2 // bomb_size) - 1) * bomb_size
-        print(self.game.tracking.get_available_cells())
+        check = self.game.tracking.get_available_cells()
+        if not check:
+            self.x = random.randint(0, (display_size_1 // bomb_size) - 1) * bomb_size
+            self.y = random.randint(0, (display_size_2 // bomb_size) - 1) * bomb_size
+        else:
+            option = random.choice(tuple(check))
+            x,y = option
+            self.x = x * bomb_size
+            self.y = y * bomb_size
+
+        # print(self.game.tracking.get_available_cells()) #debug line
 
 class Food:
     def __init__(self, parent_food_null):
@@ -251,8 +259,41 @@ class Tracking:
             self.game.food.y // apple_size
         )
 
-        available_cells = self.most_visits - occupied_cells - {food_cell}
-        return available_cells
+        excluded_cells = occupied_cells | {food_cell}
+
+        visit_counts = sorted(
+            set(self.snake_area_visited.values()),
+            reverse=True
+        )
+
+        for count in visit_counts:
+            available_cells = {
+                position
+                for position, visits in self.snake_area_visited.items()
+                if visits == count and position not in excluded_cells
+            }
+            
+            ''' We can also do this for count thing like this tho: 
+            
+            available_cells = set()
+            for position, visits in self.snake_area_visited.items():
+                if visits == count and position not in excluded_cells:
+                    available_cells.add(position)
+            
+            basically the structure is:
+                new_set = {
+                    value_to_store
+                    for item in collection
+                    if condition
+            }'''
+
+            if available_cells:
+                return available_cells
+            
+        return set()
+        
+        # available_cells = self.most_visits - occupied_cells - {food_cell}
+        # return available_cells
 
 
 class Game:
