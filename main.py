@@ -42,6 +42,7 @@ class Obstacles:
     def spawn_bomb(self):
         self.x = random.randint(0, (display_size_1 // bomb_size) - 1) * bomb_size
         self.y = random.randint(0, (display_size_2 // bomb_size) - 1) * bomb_size
+        print(self.game.tracking.get_available_cells())
 
 class Food:
     def __init__(self, parent_food_null):
@@ -216,28 +217,43 @@ class Snake:
 class Tracking:
     def __init__(self, game):
         self.game = game
-        self.snake_positions = []
         self.snake_area_visited = {
             (x,y): 0
             for x in range(display_size_1//snake_size)
             for y in range(display_size_2//snake_size)
         }
+        self.most_visits = set()
         # print(self.snake_area_visited) #debug line
 
     def record_position(self, position):
         x,y = position
         grid_position = (x// snake_size, y//snake_size)
-        
-        self.snake_positions.append(grid_position)
         self.snake_area_visited[grid_position] += 1
         self.most_visited()
         # print(self.snake_area_visited) #debug line
 
     def most_visited(self):
-        self.most_visited_cell = max(
-                self.snake_area_visited, key=self.snake_area_visited.get
-            )
-        return self.most_visited_cell
+        maximum_value = max(self.snake_area_visited.values())
+        self.most_visits = set()
+        for position, visits in self.snake_area_visited.items():
+            if visits == maximum_value:
+                self.most_visits.add(position)
+        return self.most_visits
+
+    def get_available_cells(self):
+        occupied_cells = set()
+
+        for x,y in self.game.snake.positions:
+            occupied_cells.add((x // snake_size, y // snake_size))
+
+        food_cell = (
+            self.game.food.x // apple_size,
+            self.game.food.y // apple_size
+        )
+
+        available_cells = self.most_visits - occupied_cells - {food_cell}
+        return available_cells
+
 
 class Game:
     def __init__(self):
