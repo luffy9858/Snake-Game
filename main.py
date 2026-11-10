@@ -52,6 +52,12 @@ class Obstacles:
 
         # print(self.game.tracking.get_available_cells()) #debug line
 
+    def update_bombs(self):
+        pass
+
+    def check_bomb_collision(self):
+        pass
+
 class Food:
     def __init__(self, parent_food_null):
         self.parent_food_null = parent_food_null
@@ -116,30 +122,22 @@ class Snake:
         if self.direction != "up" and self.direction != "down":
             # self.record_time()
             self.direction = "down"
-            self.game.user_pattern.append("down")
-            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            self.game.tracking.record_direction(self.direction)
     def move_up(self):
         if self.direction != "down" and self.direction != "up":
             # self.record_time()
             self.direction = "up"
-            self.game.user_pattern.append("up")
-            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            self.game.tracking.record_direction(self.direction)
     def move_right(self):
         if self.direction != "left" and self.direction != "right":
             # self.record_time()
             self.direction = "right"
-            self.game.user_pattern.append("right")
-            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            self.game.tracking.record_direction(self.direction)
     def move_left(self):
         if self.direction != "right" and self.direction != "left":
             # self.record_time()
             self.direction = "left"
-            self.game.user_pattern.append("left")
-            self.game.debug_lines("snake", "", self.game.user_pattern) #debug for user pattern
-            # self.game.debug_lines("snake", "Time Spend", self.game.direction_time) #debug for user timespend on same thing
+            self.game.tracking.record_direction(self.direction)
     
     def movement(self):
 
@@ -230,23 +228,28 @@ class Tracking:
             for x in range(display_size_1//snake_size)
             for y in range(display_size_2//snake_size)
         }
-        self.most_visits = set()
+        self.recent_positions = []
+        self.recent_directions = []
+
+        self.prediction_confidence = 0
+        self.predicted_positions = set()
         # print(self.snake_area_visited) #debug line
 
     def record_position(self, position):
         x,y = position
         grid_position = (x// snake_size, y//snake_size)
         self.snake_area_visited[grid_position] += 1
-        self.most_visited()
-        # print(self.snake_area_visited) #debug line
 
-    def most_visited(self):
-        maximum_value = max(self.snake_area_visited.values())
-        self.most_visits = set()
-        for position, visits in self.snake_area_visited.items():
-            if visits == maximum_value:
-                self.most_visits.add(position)
-        return self.most_visits
+        self.recent_positions.append(grid_position)
+
+        if len(self.recent_positions) > 40:
+            self.recent_positions.pop(0)
+
+    def record_direction(self, direction):
+        self.recent_directions.append(direction)
+
+        if len(self.recent_directions) > 100:
+            self.recent_directions.pop(0)
 
     def get_available_cells(self):
         occupied_cells = set()
@@ -295,6 +298,134 @@ class Tracking:
         # available_cells = self.most_visits - occupied_cells - {food_cell}
         # return available_cells
 
+    def predict_movement(self):
+        if len(self.recent_positions) < 2:
+            return set()
+
+        dx, dy = self.get_current_direction()
+
+        self.predicted_positions = self.predict_next_positions(dx, dy)
+
+        self.calculate_prediction_confidence(dx, dy)
+
+        self.analyze_predicted_area()
+
+        return self.predicted_positions
+    
+    def analyze_movement_pattern(self):
+        pattern_counts = {}
+        if len(self.recent_directions) >= 4:
+            for i in range(len(self.recent_directions) - 3):
+                pattern = tuple(self.recent_directions[i:i+4])
+                pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+
+    def get_current_direction(self):
+        grid_width = display_size_1 // snake_size
+        grid_height = display_size_2 // snake_size
+
+        # Get the latest two positions
+        previous = self.recent_positions[-2]
+        current = self.recent_positions[-1]
+
+        # Calculate movement direction
+        dx = current[0] - previous[0]
+        dy = current[1] - previous[1]
+
+        # Account for wrapping around the screen
+        if dx == grid_width - 1:
+            dx = -1
+        elif dx == -(grid_width - 1):
+            dx = 1
+
+        if dy == grid_height - 1:
+            dy = -1
+        elif dy == -(grid_height - 1):
+            dy = 1
+
+        return dx, dy
+
+    def predict_next_positions(self, dx, dy):
+        grid_width = display_size_1 // snake_size
+        grid_height = display_size_2 // snake_size
+
+        current = self.recent_positions[-1]
+
+        # Predict the next 3 positions
+        self.predicted_positions = set()
+
+        for step in range(1, 4):
+            predicted_x = (current[0] + dx * step) % grid_width
+            predicted_y = (current[1] + dy * step) % grid_height
+
+            self.predicted_positions.add((predicted_x, predicted_y))
+
+        return self.predicted_positions
+
+    def calculate_prediction_confidence(self, dx, dy):
+        grid_width = display_size_1 // snake_size
+        grid_height = display_size_2 // snake_size
+
+        # Calculate prediction confidence using recent movement
+        recent = self.recent_positions[-6:]
+
+        movement_vectors = []
+
+        for i in range(len(recent) - 1):
+            x_change = recent[i+1][0] - recent[i][0]
+            y_change = recent[i+1][1] - recent[i][1]
+
+            if x_change == grid_width - 1:
+                x_change = -1
+            elif x_change == -(grid_width - 1):
+                x_change = 1
+
+            if y_change == grid_height - 1:
+                y_change = -1
+            elif y_change == -(grid_height - 1):
+                y_change = 1
+
+            movement_vectors.append((x_change, y_change))
+
+        matching_moves = 0
+
+        for direction in movement_vectors:
+            if direction == (dx, dy):
+                matching_moves += 1
+
+        #or u can do this:
+
+        # matching_moves = sum(
+        #     1 for direction in movement_vectors
+        #     if direction == (dx, dy)
+        # )
+
+        if movement_vectors:
+            self.prediction_confidence = matching_moves / len(movement_vectors)
+        else:
+            self.prediction_confidence = 0
+
+    def analyze_predicted_area(self):
+        # Check how frequently the predicted cells have been visited
+        # self.predicted_area_visits = {
+        #     position: self.snake_area_visited[position]
+        #     for position in self.predicted_positions
+        # }
+
+        #or use this
+
+        self.predicted_area_visits = {}
+
+        for position in self.predicted_positions:
+
+            visits = self.snake_area_visited[position]
+
+            self.predicted_area_visits[position] = visits
+
+    def analyze_apple_route(self):
+        pass
+
+    def get_dangerous_cells(self):
+        pass
 
 class Game:
     def __init__(self):
@@ -322,7 +453,7 @@ class Game:
         self.game_over_time = 0
         self.base_difficulty = 5
         self.start = True
-        self.user_pattern = []
+        # self.user_pattern = []
         self.last_obstacle_score = 0
         # self.direction_time = {"up": 0, "down": 0, "left": 0, "right": 0}
 
@@ -341,7 +472,7 @@ class Game:
         self.game_confirm = False
         self.base_difficulty = 5
         self.game_over_time = 0
-        self.user_pattern = []
+        # self.user_pattern = []
         self.last_obstacle_score = 0
         self.tracking.record_position(self.snake.positions[0])
         # self.direction_time = {"up": 0, "down": 0, "left": 0, "right": 0}
@@ -419,8 +550,7 @@ class Game:
 
     def spawn_check_obstacles(self):
         while (self.obstacle.x, self.obstacle.y) in self.snake.positions or (self.obstacle.x, self.obstacle.y) == (self.food.x, self.food.y):
-            self.obstacle.spawn_bomb()
-            
+            self.obstacle.spawn_bomb()      
 
     def set_game_difficulty(self):
         if self.score_int % 3 == 0:
@@ -532,6 +662,7 @@ class Game:
                         self.obstacle.spawn_bomb()
                         self.spawn_check_obstacles()
                         self.last_obstacle_score = self.score_int
+                    self.tracking.predict_movement()
                     self.draw_screen()
 
             elif self.game_state == "game over" and self.game_confirm == False:
@@ -545,7 +676,7 @@ class Game:
                 self.start_screen()
 
             self.clock.tick(self.base_difficulty)
-            
+            self.tracking.analyze_movement_pattern()
         pygame.quit()
 
 if __name__ == "__main__":
