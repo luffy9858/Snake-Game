@@ -9,7 +9,8 @@ Features so far:
 5. Increasing difficulty as your score increases.
 6. Game over screen with restart functionality.
 7. Added Obstacles (5th Nov,2026)
-8. Added AI Obstacles that recognize user pattern (New - 6th Nov,2026)
+8. Added AI Obstacles that recognize user pattern (6th Nov,2026)
+9. Added Brutuality in AI (New - 10th Nov,2026)
 
 Controls:
 1. WSAD - For movements

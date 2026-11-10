@@ -4,3 +4,4 @@
 \.DS_Store
 /Snake_Game.spec
 \learning
+\__pycache__
